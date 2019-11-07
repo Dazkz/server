@@ -1,20 +1,15 @@
-const users = require('../data/users.json');
+const routerUsers = require('express').Router();
+const {
+  getUserById, getAllUsers, makeUser, updateUser, updateAvatar,
+} = require('../controllers/users');
 
-const usersCheck = (req,res,next) => {
-  for (let i=0; i < users.length; i++) {
-    if (users[i]._id === req.params.id) {
-      res.status(404);
-      res.send(users[i]);
-      return;
-    }
-  }
-  res.status(404);
-  res.send({ 'message': "Нет пользователя с таким id" });
-};
+routerUsers.post('/users', makeUser);
+routerUsers.get('/users', getAllUsers);
+routerUsers.get('/users/:id', getUserById);
+routerUsers.patch('/users/me', updateUser);
+routerUsers.patch('/users/me/avatar', updateAvatar)
+routerUsers.get('/:someRequest', (req, res) => {
+  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
+});
 
-const allUsers = (req,res,next) => {
-  res.status(200);
-  console.log(users);
-  res.send(users);
-};
-module.exports = { usersCheck, allUsers };
+module.exports = routerUsers;

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -16,7 +17,7 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     validate: {
-      validator: (v) => /^(http:[/][/]|https:[/][/])/.test(v),
+      validator: (avatar) => validator.isURL(avatar),
       message: (props) => `${props.value} Эта строка должна быть ссылкой!`,
     },
     required: true,

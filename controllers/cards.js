@@ -15,8 +15,14 @@ module.exports.postCard = (req, res) => {
 };
 module.exports.deleteCard = (req, res) => {
   Card.findByIdAndDelete(req.params.cardId)
-    .then(() => res.status(200).send({ message: 'Удаление проведено успешно'}))
-    .catch(() => res.status(404).send({ message: 'Нет карточки с таким id' }));
+    .then((card) => {
+      if (!card) {
+        res.send({ message: 'Данной карты не существует в базе' });
+      } else {
+        res.send({ data: card });
+      }
+    })
+    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
 };
 module.exports.setLike = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })

@@ -17,7 +17,7 @@ module.exports.deleteCard = (req, res) => {
   Card.findByIdAndDelete(req.params.cardId)
     .then((card) => {
       if (!card) {
-        res.send({ message: 'Данной карты не существует в базе' });
+        res.status(404).send({ message: 'Данной карты не существует в базе' });
       } else {
         res.send({ data: card });
       }

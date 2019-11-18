@@ -13,16 +13,17 @@ module.exports.postCard = (req, res) => {
     .then((card) => res.send({ data: card }))
     .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
 };
+
 module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndDelete(req.params.cardId)
+  Card.findOneAndDelete({ _id: req.params.cardId, owner: req.user._id })
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: 'Данной карты не существует в базе' });
+        res.status(404).send({ message: 'Данной карты не существует в базе / у вас недостаточно прав для удаления' });
       } else {
         res.send({ data: card });
       }
     })
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch(() => res.status(500).send(req.user._id));
 };
 module.exports.setLike = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
@@ -37,7 +38,7 @@ module.exports.setLike = (req, res) => {
 module.exports.dislikeCard = (req, res) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $pull: { likes: req.user._id } },
-  { new: true }
+  { new: true },
 )
   .then((card) => {
     if (!card) {

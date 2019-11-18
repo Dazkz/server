@@ -1,10 +1,14 @@
+require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 
-const { PORT = 3000 } = process.env;
+const auth = require("./middlewares/auth");
+const { login, makeUser} = require('./controllers/users');
 
+const { PORT = 3000, NODE_ENV, JWT_SECRET } = process.env;
 const app = express();
 
 mongoose.connect('mongodb://localhost:27017/mestodb', {
@@ -13,14 +17,13 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useFindAndModify: false,
 });
 
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use((req, res, next) => {
-  req.user = {
-    _id: '5dc3d28917844831e0a83920',
-  };
-  next();
-});
+app.use('/signin', login);
+app.use('/signup', makeUser);
+
+app.use(auth);
 app.use('/', require('./routes/cards'));
 app.use('/', require('./routes/users'));
 

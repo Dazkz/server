@@ -7,13 +7,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 2,
-    maxlength: 30
+    maxlength: 30,
   },
   about: {
     type: String,
     required: true,
     minlength: 2,
-    maxlength: 30
+    maxlength: 30,
   },
   avatar: {
     type: String,
@@ -21,39 +21,39 @@ const userSchema = new mongoose.Schema({
       validator: (avatar) => validator.isURL(avatar),
       message: (props) => `${props.value} Эта строка должна быть ссылкой!`,
     },
-    required: true
+    required: true,
   },
   email: {
     type: String,
     required: true,
     unique: true,
     validate: {
-    validator: (email) => validator.isEmail(email)
-    }
+      validator: (email) => validator.isEmail(email),
+    },
   },
   password: {
     type: String,
     required: true,
     minlength: 8,
-    select: false
-  }
+    select: false,
+  },
 });
+// eslint-disable-next-line func-names
 userSchema.statics.findUserByCredentials = function (email, password) {
   return this.findOne({ email })
-    .select("+password")
+    .select('+password')
     .then((user) => {
       if (!user) {
         return Promise.reject(new Error('Неправильные почта или пароль'));
       }
 
-      return bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            return Promise.reject(new Error('Неправильные почта или пароль'));
-          }
+      return bcrypt.compare(password, user.password).then((matched) => {
+        if (!matched) {
+          return Promise.reject(new Error('Неправильные почта или пароль'));
+        }
 
-          return user;
-        });
+        return user;
+      });
     });
 };
 

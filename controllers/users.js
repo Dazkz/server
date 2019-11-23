@@ -2,28 +2,30 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const NotFoundError = require('../errors/not-found-error');
+const BadReqError = require('../errors/badReq');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
-module.exports.getUserById = (req, res) => {
+module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.id)
     .then((user) => {
       if (!user) {
-        return res.status(404).json({ message: 'Нет пользователя с таким id' });
+        throw NotFoundError('Пользователь с таким id не найден');
       }
       return res.send(user);
     })
 
-    .catch(() => res.status(404).send({ message: 'Запрашиваемого пользователя не существует' }));
+    .catch(next);
 };
 
-module.exports.getAllUsers = (req, res) => {
+module.exports.getAllUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send({ data: users }))
-    .catch(() => res.status(500).send({ message: 'Что-то пошло не так' }));
+    .catch(next);
 };
 
-module.exports.makeUser = (req, res) => {
+module.exports.makeUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -34,35 +36,42 @@ module.exports.makeUser = (req, res) => {
       avatar,
       email,
       password: hash,
-    }))
+    })
+      .catch(() => Promise.reject(new BadReqError('Ошибка валидации/аккаунт с таким Email уже существует'))))
     .then((user) => res.status(201).send({
       name: user.name,
       about: user.about,
       avatar: user.avatar,
       email: user.email,
     }))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch(next);
 };
 
-module.exports.updateUser = (req, res) => {
+module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
-  if (!((name.length > 1) && (name.length < 30) && (about.length > 1) && (about.length < 30) && (typeof (name) === 'string') && (typeof (about) === 'string'))) {
-    res.status(404).send({ message: 'Ошибка валидации' });
-    return;
-  }
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true })
-    .then((user) => res.send({ data: user }))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+  User.findByIdAndUpdate(req.user._id, { name, about },
+    {
+      new: true,
+      runValidators: true,
+    })
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Ошибка валидации/ такого пользователя не существует');
+      }
+      res.send({ data: user });
+    })
+    .catch(next);
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
+  User.findByIdAndUpdate(req.user._id, { avatar },
+    { new: true, runValidators: true })
     .then((user) => res.send({ data: user }))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch(next);
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   User.findUserByCredentials(email, password)
     .then((user) => {
@@ -70,7 +79,5 @@ module.exports.login = (req, res) => {
       res.cookie('jwt', token, { httpOnly: true });
       res.status(201).send({ token });
     })
-    .catch((err) => {
-      res.status(401).send({ message: err.message });
-    });
+    .catch(next);
 };
